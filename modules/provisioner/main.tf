@@ -82,14 +82,36 @@ resource "null_resource" "build_amnezia_image" {
 
   provisioner "remote-exec" {
     inline = [
+      "cd /tmp/amnezia-wg-easy",
+      "# Fix Node.js version compatibility issue in Dockerfile",
+      "# Option 1: Update base image to Node.js 22 LTS if FROM node:18 or node:20 is used",
+      "if grep -q 'FROM node:18' Dockerfile || grep -q 'FROM node:20' Dockerfile; then",
+      "  if ! grep -q 'FROM node:22' Dockerfile; then",
+      "    echo 'Fixing Dockerfile: updating Node.js base image to 22 LTS'",
+      "    sed -i 's/FROM node:18/FROM node:22/' Dockerfile",
+      "    sed -i 's/FROM node:20/FROM node:22/' Dockerfile",
+      "  fi",
+      "fi",
+      "# Option 2: If base image update doesn't work, skip npm@latest install",
+      "if grep -q 'npm install -g npm@latest' Dockerfile && ! grep -q '# RUN npm install -g npm@latest' Dockerfile; then",
+      "  echo 'Fixing Dockerfile: skipping npm@latest install to avoid Node.js version conflict'",
+      "  sed -i 's/RUN npm install -g npm@latest/# RUN npm install -g npm@latest  # Skipped: incompatible with Node.js v18/' Dockerfile",
+      "fi",
+      "# Remove existing image if it exists to force rebuild",
+      "if sudo docker images -q amnezia-wg-easy | grep -q .; then",
+      "  echo 'Removing existing Docker image to force rebuild...'",
+      "  sudo docker rmi amnezia-wg-easy || true",
+      "fi",
+      "echo 'Building Docker image amnezia-wg-easy...'",
+      "if ! sudo docker build -t amnezia-wg-easy .; then",
+      "  echo 'ERROR: Docker build failed'",
+      "  exit 1",
+      "fi",
       "if ! sudo docker images -q amnezia-wg-easy | grep -q .; then",
-      "  echo 'Docker image amnezia-wg-easy not found, building...'",
-      "  cd /tmp/amnezia-wg-easy",
-      "  sudo docker build -t amnezia-wg-easy .",
-      "  echo 'Docker image built successfully'",
-      "else",
-      "  echo 'Docker image amnezia-wg-easy already exists'",
-      "fi"
+      "  echo 'ERROR: Docker image verification failed - image does not exist after build'",
+      "  exit 1",
+      "fi",
+      "echo 'Docker image built successfully'"
     ]
   }
 }

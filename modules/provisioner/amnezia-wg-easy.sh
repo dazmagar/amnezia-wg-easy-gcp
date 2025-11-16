@@ -1,4 +1,11 @@
 container_name="amnezia-wg-easy"
+
+# Verify Docker image exists
+if ! sudo docker images -q amnezia-wg-easy | grep -q .; then
+  echo "ERROR: Docker image 'amnezia-wg-easy' not found. Please build the image first."
+  exit 1
+fi
+
 container_id=$(sudo docker ps -a -q --filter "name=${container_name}")
 if [ -n "$container_id" ]; then
   echo "Stopping and removing existing container: $container_name"
