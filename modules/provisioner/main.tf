@@ -231,7 +231,15 @@ resource "null_resource" "setup_cron_restart" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /home/${var.user}/setup-cron-restart.sh",
-      "bash /home/${var.user}/setup-cron-restart.sh '${var.cron_restart_schedule}'"
+      "echo 'Setting up cron job for container restart...'",
+      "bash /home/${var.user}/setup-cron-restart.sh '${var.cron_restart_schedule}' || {",
+      "  echo 'ERROR: Failed to setup cron job' >&2",
+      "  echo 'Checking if container is running...' >&2",
+      "  sudo docker ps --filter 'name=amnezia-wg-easy' >&2 || echo 'Container not found' >&2",
+      "  exit 1",
+      "}",
+      "echo 'Verifying cron job was added...'",
+      "crontab -l | grep -q 'amnezia-wg-easy' && echo 'Cron job verified' || echo 'WARNING: Cron job not found in crontab'"
     ]
   }
 }
