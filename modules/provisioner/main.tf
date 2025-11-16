@@ -177,9 +177,14 @@ resource "null_resource" "run_amnezia_docker_container" {
     inline = [
       "chmod +x /home/${var.user}/amnezia-wg-easy.sh",
       "export USER=${var.user}",
-      "bash -x /home/${var.user}/amnezia-wg-easy.sh '${var.wg_host}' '${var.wg_password}' || {",
-      "  echo 'Container startup failed, checking logs...'",
-      "  sudo docker logs amnezia-wg-easy 2>&1 || true",
+      "bash /home/${var.user}/amnezia-wg-easy.sh '${var.wg_host}' '${var.wg_password}' || {",
+      "  echo '=== Container startup failed ==='",
+      "  echo 'Checking deployment log...'",
+      "  cat /tmp/amnezia-container-deploy.log 2>/dev/null || echo 'Log file not found'",
+      "  echo 'Checking container logs...'",
+      "  sudo docker logs amnezia-wg-easy 2>&1 || echo 'Container does not exist'",
+      "  echo 'Checking container status...'",
+      "  sudo docker ps -a --filter 'name=amnezia-wg-easy' || true",
       "  exit 1",
       "}"
     ]
