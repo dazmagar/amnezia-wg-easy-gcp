@@ -176,7 +176,12 @@ resource "null_resource" "run_amnezia_docker_container" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /home/${var.user}/amnezia-wg-easy.sh",
-      "bash /home/${var.user}/amnezia-wg-easy.sh ${var.wg_host} '${var.wg_password}'"
+      "export USER=${var.user}",
+      "bash -x /home/${var.user}/amnezia-wg-easy.sh '${var.wg_host}' '${var.wg_password}' || {",
+      "  echo 'Container startup failed, checking logs...'",
+      "  sudo docker logs amnezia-wg-easy 2>&1 || true",
+      "  exit 1",
+      "}"
     ]
   }
 }
