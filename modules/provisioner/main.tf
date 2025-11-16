@@ -1,24 +1,8 @@
-resource "null_resource" "backup_wireguard_configs" {
+resource "null_resource" "install_docker" {
   triggers = {
     instance_ip = var.instance_ip
-    timestamp   = timestamp()
+    user        = var.user
   }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      $ErrorActionPreference = "SilentlyContinue"
-      New-Item -ItemType Directory -Force -Path "${path.module}/wg_backup" | Out-Null
-      $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-      
-      ssh -i ${var.privatekeypath} -o StrictHostKeyChecking=no -o UserKnownHostsFile=$null ${var.user}@${var.instance_ip} "sudo cat /home/${var.user}/.amnezia-wg-easy/wg0.conf" | Out-File -FilePath "${path.module}/wg_backup/wg0.conf.backup.$timestamp" -Encoding utf8 -NoNewline 2>$null
-      ssh -i ${var.privatekeypath} -o StrictHostKeyChecking=no -o UserKnownHostsFile=$null ${var.user}@${var.instance_ip} "sudo cat /home/${var.user}/.amnezia-wg-easy/wg0.json" | Out-File -FilePath "${path.module}/wg_backup/wg0.json.backup.$timestamp" -Encoding utf8 -NoNewline 2>$null
-    EOT
-    interpreter = ["PowerShell", "-Command"]
-  }
-}
-
-resource "null_resource" "install_docker" {
-  depends_on = [null_resource.backup_wireguard_configs]
 
   connection {
     host        = var.instance_ip
@@ -35,8 +19,20 @@ resource "null_resource" "install_docker" {
 
   provisioner "remote-exec" {
     inline = [
+      # Check if Docker is already installed and running
+      "if command -v docker &> /dev/null && sudo systemctl is-active --quiet docker; then",
+      "  echo 'Docker is already installed and running: $(docker --version)'",
+      "  exit 0",
+      "fi",
+      # If not installed, run installation script
       "chmod +x /tmp/startup.sh",
-      "bash /tmp/startup.sh '${var.user}'"
+      "bash /tmp/startup.sh '${var.user}'",
+      # Verify Docker installation
+      "if ! command -v docker &> /dev/null; then",
+      "  echo 'Error: Docker installation failed'",
+      "  exit 1",
+      "fi",
+      "echo 'Docker installed successfully'"
     ]
   }
 }
@@ -81,16 +77,18 @@ resource "null_resource" "build_amnezia_image" {
 
 data "local_file" "wg0_conf" {
   count    = var.enable_wg_configs ? 1 : 0
-  filename = "${path.module}/wg_backup/wg0.conf"
+  filename = "${path.root}/modules/backup/wg_backup/wg0.conf"
 }
 
 data "local_file" "wg0_json" {
   count    = var.enable_wg_configs ? 1 : 0
-  filename = "${path.module}/wg_backup/wg0.json"
+  filename = "${path.root}/modules/backup/wg_backup/wg0.json"
 }
 
 resource "null_resource" "copy_wireguard_configs" {
   count = var.enable_wg_configs ? 1 : 0
+
+  depends_on = [null_resource.build_amnezia_image]
 
   connection {
     agent       = false
@@ -102,6 +100,7 @@ resource "null_resource" "copy_wireguard_configs" {
 
   provisioner "remote-exec" {
     inline = [
+      "mkdir -p /home/${var.user}/.amnezia-wg-easy",
       "echo '${data.local_file.wg0_conf[0].content}' | sudo tee /home/${var.user}/.amnezia-wg-easy/wg0.conf > /dev/null",
       "echo '${data.local_file.wg0_json[0].content}' | sudo tee /home/${var.user}/.amnezia-wg-easy/wg0.json > /dev/null",
       "sudo chown root:root /home/${var.user}/.amnezia-wg-easy/wg0.conf",
@@ -111,7 +110,7 @@ resource "null_resource" "copy_wireguard_configs" {
 }
 
 resource "null_resource" "run_amnezia_docker_container" {
-  depends_on = [null_resource.build_amnezia_image]
+  depends_on = [null_resource.build_amnezia_image, null_resource.copy_wireguard_configs]
 
   connection {
     host        = var.instance_ip
@@ -135,7 +134,7 @@ resource "null_resource" "run_amnezia_docker_container" {
 }
 
 resource "null_resource" "setup_cron_restart" {
-  depends_on = [null_resource.run_amnezia_docker_container]
+  depends_on = [null_resource.install_docker, null_resource.run_amnezia_docker_container]
 
   connection {
     host        = var.instance_ip

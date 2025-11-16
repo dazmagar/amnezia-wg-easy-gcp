@@ -39,4 +39,4 @@ override.tf.json
 
 # Customs
 keys/*
-modules/provisioner/wg_backup/*
+modules/backup/wg_backup/*

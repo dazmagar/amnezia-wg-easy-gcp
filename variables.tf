@@ -73,3 +73,9 @@ variable "cron_restart_schedule" {
   description = "Cron schedule for container restart (default: daily at 3 AM)"
   default     = "0 3 * * *"
 }
+
+variable "enable_wg_configs" {
+  type        = bool
+  description = "Enable WireGuard configuration files backup/restore"
+  default     = false
+}

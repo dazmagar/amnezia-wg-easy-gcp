@@ -62,4 +62,8 @@ resource "google_compute_instance" "vpn_instance" {
     scopes = ["compute-ro"]
   }
 
+  lifecycle {
+    create_before_destroy = false
+  }
+
 }
