@@ -1,4 +1,25 @@
+resource "null_resource" "backup_wireguard_configs" {
+  triggers = {
+    instance_ip = var.instance_ip
+    timestamp   = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      $ErrorActionPreference = "SilentlyContinue"
+      New-Item -ItemType Directory -Force -Path "${path.module}/wg_backup" | Out-Null
+      $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+      
+      ssh -i ${var.privatekeypath} -o StrictHostKeyChecking=no -o UserKnownHostsFile=$null ${var.user}@${var.instance_ip} "sudo cat /home/${var.user}/.amnezia-wg-easy/wg0.conf" | Out-File -FilePath "${path.module}/wg_backup/wg0.conf.backup.$timestamp" -Encoding utf8 -NoNewline 2>$null
+      ssh -i ${var.privatekeypath} -o StrictHostKeyChecking=no -o UserKnownHostsFile=$null ${var.user}@${var.instance_ip} "sudo cat /home/${var.user}/.amnezia-wg-easy/wg0.json" | Out-File -FilePath "${path.module}/wg_backup/wg0.json.backup.$timestamp" -Encoding utf8 -NoNewline 2>$null
+    EOT
+    interpreter = ["PowerShell", "-Command"]
+  }
+}
+
 resource "null_resource" "install_docker" {
+  depends_on = [null_resource.backup_wireguard_configs]
+
   connection {
     host        = var.instance_ip
     type        = "ssh"
