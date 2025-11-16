@@ -42,6 +42,11 @@ resource "null_resource" "install_docker" {
 resource "null_resource" "clone_repository" {
   depends_on = [null_resource.install_docker]
 
+  triggers = {
+    instance_ip = var.instance_ip
+    user        = var.user
+  }
+
   connection {
     host        = var.instance_ip
     type        = "ssh"
@@ -61,6 +66,12 @@ resource "null_resource" "clone_repository" {
 resource "null_resource" "build_amnezia_image" {
   depends_on = [null_resource.clone_repository]
 
+  triggers = {
+    instance_ip = var.instance_ip
+    user        = var.user
+    repository  = null_resource.clone_repository.id
+  }
+
   connection {
     host        = var.instance_ip
     type        = "ssh"
@@ -71,8 +82,14 @@ resource "null_resource" "build_amnezia_image" {
 
   provisioner "remote-exec" {
     inline = [
-      "cd /tmp/amnezia-wg-easy",
-      "sudo docker build -t amnezia-wg-easy ."
+      "if ! sudo docker images -q amnezia-wg-easy | grep -q .; then",
+      "  echo 'Docker image amnezia-wg-easy not found, building...'",
+      "  cd /tmp/amnezia-wg-easy",
+      "  sudo docker build -t amnezia-wg-easy .",
+      "  echo 'Docker image built successfully'",
+      "else",
+      "  echo 'Docker image amnezia-wg-easy already exists'",
+      "fi"
     ]
   }
 }
@@ -113,6 +130,13 @@ resource "null_resource" "copy_wireguard_configs" {
 
 resource "null_resource" "run_amnezia_docker_container" {
   depends_on = [null_resource.build_amnezia_image, null_resource.copy_wireguard_configs]
+
+  triggers = {
+    instance_ip  = var.instance_ip
+    user         = var.user
+    wg_host      = var.wg_host
+    image_built  = null_resource.build_amnezia_image.id
+  }
 
   connection {
     host        = var.instance_ip
