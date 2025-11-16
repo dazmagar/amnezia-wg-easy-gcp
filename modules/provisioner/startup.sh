@@ -15,10 +15,12 @@ else
   echo "Docker already installed: $(docker --version)"
 fi
 
-# Verify Docker installation
-if ! command -v docker &> /dev/null; then
-  echo "Error: Docker installation failed - docker command not found"
-  exit 1
+# Verify Docker installation (use sudo since usermod requires new session to take effect)
+if ! sudo docker --version &> /dev/null; then
+  if [ ! -f /usr/bin/docker ]; then
+    echo "Error: Docker installation failed - docker command not found"
+    exit 1
+  fi
 fi
 
 echo "Starting Docker service..."

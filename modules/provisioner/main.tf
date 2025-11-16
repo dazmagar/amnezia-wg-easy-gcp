@@ -27,10 +27,12 @@ resource "null_resource" "install_docker" {
       # If not installed, run installation script
       "chmod +x /tmp/startup.sh",
       "bash /tmp/startup.sh '${var.user}'",
-      # Verify Docker installation
-      "if ! command -v docker &> /dev/null; then",
-      "  echo 'Error: Docker installation failed'",
-      "  exit 1",
+      # Verify Docker installation (use sudo since usermod requires new session to take effect)
+      "if ! sudo docker --version &> /dev/null; then",
+      "  if [ ! -f /usr/bin/docker ]; then",
+      "    echo 'Error: Docker installation failed'",
+      "    exit 1",
+      "  fi",
       "fi",
       "echo 'Docker installed successfully'"
     ]
