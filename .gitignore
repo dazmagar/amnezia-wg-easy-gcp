@@ -38,5 +38,6 @@ override.tf.json
 *id_rsa.pub
 
 # Customs
+bkp/*
 keys/*
 modules/backup/wg_backup/*

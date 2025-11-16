@@ -1,9 +1,26 @@
-gcp_credentials_json = "GCP credential json"
-project              = "GCP project name"
-region               = "vm instance region"
-user                 = "vm instance user name"
-publickeypath        = "public key id_rsa.pub"
-privatekeypath       = "private key id_rsa"
-email                = "GCP service account email"
-wg_host              = "WireGuard host ip or FQDN"
-wg_password          = "WireGuard host admin pass"
+# Required: GCP credentials
+gcp_credentials_json = "path/to/credentials.json"
+project              = "your-gcp-project-id"
+region               = "us-east4"
+email                = "service-account@project.iam.gserviceaccount.com"
+
+# Required: SSH keys
+user                 = "your-ssh-username"
+publickeypath        = "path/to/id_rsa.pub"
+privatekeypath       = "path/to/id_rsa"
+
+# Required: WireGuard configuration
+wg_host              = "vpn.example.com"
+wg_password          = "your-bcrypt-hashed-password"
+
+# Optional: Instance configuration (defaults shown)
+instance_name        = "vpn-server"
+boot_image           = "ubuntu-2404-lts-amd64"
+machine_type         = "e2-micro"
+zone_suffix          = "b"
+
+# Optional: Cron schedule for container restart (default: daily at 3 AM)
+cron_restart_schedule = "0 3 * * *"
+
+# Optional: Enable WireGuard config backup/restore
+enable_wg_configs    = false

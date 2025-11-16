@@ -65,8 +65,16 @@ if (-not (Test-Path $backupDir)) {
 }
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$year = Get-Date -Format "yyyy"
+$yearDir = Join-Path $backupDir $year
+
 Write-Host "Backup directory: $backupDir"
 Write-Host "Starting backup at $timestamp"
+
+# Create year directory if it doesn't exist
+if (-not (Test-Path $yearDir)) {
+  New-Item -ItemType Directory -Force -Path $yearDir | Out-Null
+}
 
 # Download files from server (one connection per file)
 Write-Host "Downloading wg0.conf from server..."
@@ -75,9 +83,9 @@ if ($LASTEXITCODE -eq 0) {
   # Save as latest (without timestamp) for restore
   $confContent | Out-File -FilePath "$backupDir/wg0.conf" -Encoding utf8 -NoNewline
   Write-Host "wg0.conf downloaded"
-  # Create timestamped copy locally
-  Copy-Item -Path "$backupDir/wg0.conf" -Destination "$backupDir/wg0.conf.backup.$timestamp"
-  Write-Host "wg0.conf backup with timestamp created"
+  # Create timestamped copy in year directory
+  Copy-Item -Path "$backupDir/wg0.conf" -Destination "$yearDir/wg0.conf.backup.$timestamp"
+  Write-Host "wg0.conf backup with timestamp created in $yearDir"
 } else {
   Write-Warning "Failed to download wg0.conf: $confContent"
 }
@@ -88,9 +96,9 @@ if ($LASTEXITCODE -eq 0) {
   # Save as latest (without timestamp) for restore
   $jsonContent | Out-File -FilePath "$backupDir/wg0.json" -Encoding utf8 -NoNewline
   Write-Host "wg0.json downloaded"
-  # Create timestamped copy locally
-  Copy-Item -Path "$backupDir/wg0.json" -Destination "$backupDir/wg0.json.backup.$timestamp"
-  Write-Host "wg0.json backup with timestamp created"
+  # Create timestamped copy in year directory
+  Copy-Item -Path "$backupDir/wg0.json" -Destination "$yearDir/wg0.json.backup.$timestamp"
+  Write-Host "wg0.json backup with timestamp created in $yearDir"
 } else {
   Write-Warning "Failed to download wg0.json: $jsonContent"
 }

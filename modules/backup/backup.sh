@@ -32,16 +32,24 @@ if [ ! -d "$BACKUP_PATH" ]; then
 fi
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+YEAR=$(date +%Y)
+YEAR_DIR="$BACKUP_PATH/$YEAR"
+
 echo "Backup directory: $BACKUP_PATH"
 echo "Starting backup at $TIMESTAMP"
+
+# Create year directory if it doesn't exist
+if [ ! -d "$YEAR_DIR" ]; then
+  mkdir -p "$YEAR_DIR"
+fi
 
 # Download files from server (one connection per file)
 echo "Downloading wg0.conf from server..."
 if ssh -i "$PRIVATE_KEY_PATH" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$USER@$INSTANCE_IP" "sudo cat /home/$USER/.amnezia-wg-easy/wg0.conf" > "$BACKUP_PATH/wg0.conf" 2>/dev/null; then
   echo "wg0.conf downloaded"
-  # Create timestamped copy locally
-  cp "$BACKUP_PATH/wg0.conf" "$BACKUP_PATH/wg0.conf.backup.$TIMESTAMP"
-  echo "wg0.conf backup with timestamp created"
+  # Create timestamped copy in year directory
+  cp "$BACKUP_PATH/wg0.conf" "$YEAR_DIR/wg0.conf.backup.$TIMESTAMP"
+  echo "wg0.conf backup with timestamp created in $YEAR_DIR"
 else
   echo "Warning: Failed to download wg0.conf"
 fi
@@ -49,9 +57,9 @@ fi
 echo "Downloading wg0.json from server..."
 if ssh -i "$PRIVATE_KEY_PATH" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$USER@$INSTANCE_IP" "sudo cat /home/$USER/.amnezia-wg-easy/wg0.json" > "$BACKUP_PATH/wg0.json" 2>/dev/null; then
   echo "wg0.json downloaded"
-  # Create timestamped copy locally
-  cp "$BACKUP_PATH/wg0.json" "$BACKUP_PATH/wg0.json.backup.$TIMESTAMP"
-  echo "wg0.json backup with timestamp created"
+  # Create timestamped copy in year directory
+  cp "$BACKUP_PATH/wg0.json" "$YEAR_DIR/wg0.json.backup.$TIMESTAMP"
+  echo "wg0.json backup with timestamp created in $YEAR_DIR"
 else
   echo "Warning: Failed to download wg0.json"
 fi

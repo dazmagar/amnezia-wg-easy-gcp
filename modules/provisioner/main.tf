@@ -167,7 +167,10 @@ resource "null_resource" "copy_wireguard_configs" {
 }
 
 resource "null_resource" "run_amnezia_docker_container" {
-  depends_on = [null_resource.build_amnezia_image, null_resource.copy_wireguard_configs]
+  depends_on = [
+    null_resource.build_amnezia_image,
+    null_resource.copy_wireguard_configs
+  ]
 
   triggers = {
     instance_ip  = var.instance_ip
