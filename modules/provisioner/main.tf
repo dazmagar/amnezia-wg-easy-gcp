@@ -20,21 +20,21 @@ resource "null_resource" "install_docker" {
   provisioner "remote-exec" {
     inline = [
       # Check if Docker is already installed and running
-      "if command -v docker &> /dev/null && sudo systemctl is-active --quiet docker; then",
-      "  echo 'Docker is already installed and running: $(docker --version)'",
-      "  exit 0",
-      "fi",
-      # If not installed, run installation script
-      "chmod +x /tmp/startup.sh",
-      "bash /tmp/startup.sh '${var.user}'",
-      # Verify Docker installation (use sudo since usermod requires new session to take effect)
-      "if ! sudo docker --version &> /dev/null; then",
-      "  if [ ! -f /usr/bin/docker ]; then",
-      "    echo 'Error: Docker installation failed'",
-      "    exit 1",
+      "if sudo docker --version &> /dev/null && sudo systemctl is-active --quiet docker; then",
+      "  echo 'Docker is already installed and running: $(sudo docker --version)'",
+      "else",
+      "  # If not installed, run installation script",
+      "  chmod +x /tmp/startup.sh",
+      "  bash /tmp/startup.sh '${var.user}'",
+      "  # Verify Docker installation (use sudo since usermod requires new session to take effect)",
+      "  if ! sudo docker --version &> /dev/null; then",
+      "    if [ ! -f /usr/bin/docker ]; then",
+      "      echo 'Error: Docker installation failed'",
+      "      exit 1",
+      "    fi",
       "  fi",
-      "fi",
-      "echo 'Docker installed successfully'"
+      "  echo 'Docker installed successfully'",
+      "fi"
     ]
   }
 }
@@ -72,7 +72,7 @@ resource "null_resource" "build_amnezia_image" {
   provisioner "remote-exec" {
     inline = [
       "cd /tmp/amnezia-wg-easy",
-      "docker build -t amnezia-wg-easy ."
+      "sudo docker build -t amnezia-wg-easy ."
     ]
   }
 }

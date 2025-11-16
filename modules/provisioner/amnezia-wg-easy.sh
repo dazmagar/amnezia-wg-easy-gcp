@@ -1,12 +1,12 @@
 container_name="amnezia-wg-easy"
-container_id=$(docker ps -a -q --filter "name=${container_name}")
+container_id=$(sudo docker ps -a -q --filter "name=${container_name}")
 if [ -n "$container_id" ]; then
   echo "Stopping and removing existing container: $container_name"
-  docker stop $container_name
-  docker rm $container_name
+  sudo docker stop $container_name
+  sudo docker rm $container_name
 fi
 
-docker run -d \
+sudo docker run -d \
   --name=amnezia-wg-easy \
   -e LANG=en \
   -e WG_HOST=$1 \
