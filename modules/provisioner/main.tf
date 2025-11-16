@@ -112,3 +112,27 @@ resource "null_resource" "run_amnezia_docker_container" {
     ]
   }
 }
+
+resource "null_resource" "setup_cron_restart" {
+  depends_on = [null_resource.run_amnezia_docker_container]
+
+  connection {
+    host        = var.instance_ip
+    type        = "ssh"
+    user        = var.user
+    timeout     = "500s"
+    private_key = file(var.privatekeypath)
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/setup-cron-restart.sh"
+    destination = "/home/${var.user}/setup-cron-restart.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /home/${var.user}/setup-cron-restart.sh",
+      "bash /home/${var.user}/setup-cron-restart.sh '${var.cron_restart_schedule}'"
+    ]
+  }
+}

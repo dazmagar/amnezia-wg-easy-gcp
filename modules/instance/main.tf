@@ -1,3 +1,8 @@
+data "google_compute_image" "ubuntu" {
+  family  = var.boot_image
+  project = "ubuntu-os-cloud"
+}
+
 resource "google_compute_firewall" "default" {
   name    = "vpn-server-firewall"
   network = "default"
@@ -25,15 +30,15 @@ resource "google_compute_address" "static" {
 }
 
 resource "google_compute_instance" "vpn_instance" {
-  name         = "vpn-instance"
-  machine_type = "e2-micro"
+  name         = var.instance_name
+  machine_type = var.machine_type
   project      = var.project
-  zone         = "${var.region}-b"
+  zone         = "${var.region}-${var.zone_suffix}"
   tags         = ["vpn-server"]
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-2204-jammy-v20221014"
+      image = data.google_compute_image.ubuntu.self_link
       size  = "10"
       type  = "pd-standard"
     }
